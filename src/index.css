@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@300;400;500;600;700&family=Syncopate:wght@700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-paper font-body text-asphalt antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid #0B0B0B;
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .container-x {
+    @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10;
+  }
+
+  /* Microgramma-style extended headline. Wide letterforms, so sizes stay modest. */
+  .display {
+    @apply font-display font-bold uppercase leading-[1.12] tracking-[0.01em];
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-solid {
+    @apply btn bg-asphalt text-paper hover:bg-charcoal;
+  }
+
+  .btn-light {
+    @apply btn bg-paper text-asphalt hover:bg-chalk;
+  }
+
+  .btn-outline {
+    @apply btn border border-asphalt text-asphalt hover:bg-asphalt hover:text-paper;
+  }
+
+  .field {
+    @apply w-full border border-asphalt/25 bg-paper px-4 py-3 text-sm placeholder:text-muted/70 focus:border-asphalt focus:outline-none;
+  }
+
+  .link-underline {
+    @apply underline decoration-asphalt/30 underline-offset-4 transition-colors hover:decoration-asphalt;
+  }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
