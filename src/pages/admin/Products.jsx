@@ -8,6 +8,11 @@ import { Gate, Modal, Status, categorySlug, imgSrc, listOf, money } from './ui';
 
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const key = (color, size) => `${color}|${size}`;
+// A variant is "low" when 1-3 are left; per-variant matters more than the product total,
+// because one sold-out size is what loses a sale.
+const LOW_STOCK = 3;
+const lowVariants = (p) => (p.variants || []).filter((v) => Number(v.stock) > 0 && Number(v.stock) <= LOW_STOCK);
+const outVariants = (p) => (p.variants || []).filter((v) => Number(v.stock) === 0);
 const totalStock = (p) => (p.variants || []).reduce((n, v) => n + Number(v.stock || 0), 0);
 const cover = (p) => p.images?.[0] || Object.values(p.imagesByColor || {}).flat()[0] || '';
 
@@ -33,11 +38,15 @@ export default function Products({ modalOpen, setModalOpen }) {
   const cats = useFetch('/admin/categories');
   const [mutate] = useMutation();
   const [query, setQuery] = useState('');
+  const [lowOnly, setLowOnly] = useState(false);
   const [menuOpen, setMenuOpen] = useState(null);
   const [editing, setEditing] = useState(null);
   const products = listOf(f.data, 'products');
   const categories = listOf(cats.data, 'categories');
-  const shown = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));
+  const lowCount = products.filter((p) => p.isActive !== false && (lowVariants(p).length || outVariants(p).length)).length;
+  const shown = products
+    .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+    .filter((p) => !lowOnly || lowVariants(p).length || outVariants(p).length);
 
   const closeModal = () => { setModalOpen(false); setEditing(null); };
   const edit = (p) => { setEditing(p); setMenuOpen(null); setModalOpen(true); };
@@ -55,14 +64,21 @@ export default function Products({ modalOpen, setModalOpen }) {
   return <>
     <article className="panel table-panel page-panel">
       <div className="filterbar"><div className="search-field"><Search size={17}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search products…"/></div>
+        <div className="tabs"><button className={lowOnly ? '' : 'active'} onClick={() => setLowOnly(false)}>All</button><button className={lowOnly ? 'active' : ''} onClick={() => setLowOnly(true)}>Low stock ({lowCount})</button></div>
         <button className="primary-btn" onClick={() => { setEditing(null); setModalOpen(true); }}><Plus size={16}/> Add product</button></div>
       <Gate f={f} isEmpty={shown.length === 0} empty={query ? 'No products match your search.' : 'No products yet. Add your first product.'}>
         <div className="table-scroll"><table><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Inventory</th><th>Status</th><th/></tr></thead><tbody>
-          {shown.map((p) => { const stock = totalStock(p); const status = p.isActive === false ? 'Paused' : stock === 0 ? 'Out of stock' : stock < 20 ? 'Low stock' : 'Active';
+          {shown.map((p) => { const stock = totalStock(p); const status = p.isActive === false ? 'Paused' : stock === 0 ? 'Out of stock' : lowVariants(p).length || outVariants(p).length ? 'Low stock' : 'Active';
+            const low = lowVariants(p); const out = outVariants(p);
             return <tr key={p.id}>
               <td><div className="product-cell">{cover(p) ? <img src={imgSrc(cover(p))} alt=""/> : <span className="img-ph tall"/>}<div><b>{p.name}</b><small>{(p.variants || []).length} variants</small></div></div></td>
               <td className="capitalize">{(typeof p.category === 'object' ? p.category?.name : null) || categories.find((c) => c.slug === p.category)?.name || String(p.category || '').replace('-', ' & ')}</td>
-              <td><b>{money(p.price)}</b></td><td>{stock} in stock</td><td><Status value={status}/></td>
+              <td><b>{money(p.price)}</b></td><td>{stock} in stock
+                {(low.length > 0 || out.length > 0) && <small className="low-note">
+                  {low.length > 0 && <>Low: {low.slice(0, 3).map((v) => `${v.color} ${v.size} (${v.stock})`).join(', ')}{low.length > 3 ? ` +${low.length - 3} more` : ''}</>}
+                  {low.length > 0 && out.length > 0 && <br/>}
+                  {out.length > 0 && <>Sold out: {out.length} {out.length === 1 ? 'size' : 'sizes'}</>}
+                </small>}</td><td><Status value={status}/></td>
               <td className="actions-cell"><button className="row-menu" aria-label={`Actions for ${p.name}`} onClick={() => setMenuOpen(menuOpen === p.id ? null : p.id)}><MoreHorizontal size={18}/></button>
                 {menuOpen === p.id && <div className="product-menu"><button onClick={() => view(p)}><Eye size={15}/>View</button><button onClick={() => edit(p)}><Pencil size={15}/>Edit</button><button className="danger" onClick={() => remove(p)}><Trash2 size={15}/>Delete</button></div>}</td></tr>; })}
         </tbody></table></div>
