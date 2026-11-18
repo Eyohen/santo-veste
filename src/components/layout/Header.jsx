@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Heart, Menu, Search, ShoppingBag, User, X } from 'lucide-react';
 import { useCart } from '../../store/CartContext';
 import { useWishlist } from '../../store/WishlistContext';
-import { categories } from '../../api/catalogue';
+import { useCategories } from '../../api/catalogue';
 
 const navLink = ({ isActive }) =>
   `py-2 text-sm font-semibold transition-colors hover:text-taupe ${isActive ? 'underline underline-offset-8' : ''}`;
@@ -56,6 +56,7 @@ function SearchOverlay({ onClose }) {
 }
 
 export default function Header() {
+  const categories = useCategories();
   const { count, openCart } = useCart();
   const { count: wishCount } = useWishlist();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -165,7 +166,7 @@ export default function Header() {
                 <li key={c.slug}>
                   <Link to={`/shop/${c.slug}`} className="group block">
                     <span className="block aspect-[4/5] overflow-hidden bg-chalk">
-                      <img src={c.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      {c.image && <img src={c.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />}
                     </span>
                     <span className="mt-2 block text-sm font-semibold">{c.name}</span>
                   </Link>

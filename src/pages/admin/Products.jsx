@@ -26,7 +26,8 @@ function initForm(p, categories) {
   });
   return {
     name: p?.name || '', category: categorySlug(p?.category) || categories[0]?.slug || '',
-    price: p?.price ?? '', compareAtPrice: p?.compareAtPrice ?? '', description: p?.description || '',
+    price: p?.basePrice ?? p?.price ?? '', compareAtPrice: p?.listCompareAtPrice ?? '',
+    discountType: p?.discountType || '', discountValue: p?.discountValue ?? '', description: p?.description || '',
     fabrics: p?.fabrics || '', features: p?.features || '', isNew: !!p?.isNew, isActive: p ? p.isActive !== false : true,
     images: [...(p?.images || [])], imagesByColor: { ...(p?.imagesByColor || {}) }, colours, stock, skus,
   };
@@ -67,13 +68,14 @@ export default function Products({ modalOpen, setModalOpen }) {
         <div className="tabs"><button className={lowOnly ? '' : 'active'} onClick={() => setLowOnly(false)}>All</button><button className={lowOnly ? 'active' : ''} onClick={() => setLowOnly(true)}>Low stock ({lowCount})</button></div>
         <button className="primary-btn" onClick={() => { setEditing(null); setModalOpen(true); }}><Plus size={16}/> Add product</button></div>
       <Gate f={f} isEmpty={shown.length === 0} empty={query ? 'No products match your search.' : 'No products yet. Add your first product.'}>
-        <div className="table-scroll"><table><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Inventory</th><th>Status</th><th/></tr></thead><tbody>
+        <div className="table-scroll"><table><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Discount</th><th>Inventory</th><th>Status</th><th/></tr></thead><tbody>
           {shown.map((p) => { const stock = totalStock(p); const status = p.isActive === false ? 'Paused' : stock === 0 ? 'Out of stock' : lowVariants(p).length || outVariants(p).length ? 'Low stock' : 'Active';
             const low = lowVariants(p); const out = outVariants(p);
             return <tr key={p.id}>
               <td><div className="product-cell">{cover(p) ? <img src={imgSrc(cover(p))} alt=""/> : <span className="img-ph tall"/>}<div><b>{p.name}</b><small>{(p.variants || []).length} variants</small></div></div></td>
               <td className="capitalize">{(typeof p.category === 'object' ? p.category?.name : null) || categories.find((c) => c.slug === p.category)?.name || String(p.category || '').replace('-', ' & ')}</td>
-              <td><b>{money(p.price)}</b></td><td>{stock} in stock
+              <td><b>{money(p.price)}</b>{p.discountType && <small className="low-note"><s>{money(p.basePrice)}</s></small>}</td>
+              <td>{p.discountType ? <Status value={p.discountType === 'percent' ? `${p.discountValue}% off` : `${money(p.discountValue)} off`}/> : '—'}</td><td>{stock} in stock
                 {(low.length > 0 || out.length > 0) && <small className="low-note">
                   {low.length > 0 && <>Low: {low.slice(0, 3).map((v) => `${v.color} ${v.size} (${v.stock})`).join(', ')}{low.length > 3 ? ` +${low.length - 3} more` : ''}</>}
                   {low.length > 0 && out.length > 0 && <br/>}
@@ -95,6 +97,8 @@ function ProductModal({ product, categories, onClose, onSaved }) {
   const [uploading, setUploading] = useState(false);
   const [mutate, saving] = useMutation();
   const set = (patch) => setForm((s) => ({ ...s, ...patch }));
+  const base = Number(form.price); const dv = Number(form.discountValue);
+  const finalPrice = form.discountType && dv > 0 && base > 0 ? Math.max(1, base - (form.discountType === 'percent' ? Math.round(base * dv / 100) : dv)) : null;
 
   const addColour = () => {
     const name = colour.name.trim();
@@ -133,7 +137,9 @@ function ProductModal({ product, categories, onClose, onSaved }) {
       name: form.name.trim(), category: form.category, price: Number(form.price), description: form.description.trim(),
       fabrics: form.fabrics.trim(), features: form.features.trim(), isNew: form.isNew, isActive: form.isActive,
       images: form.images, imagesByColor: form.imagesByColor, variants,
-      ...(form.compareAtPrice !== '' ? { compareAtPrice: Number(form.compareAtPrice) } : product?.compareAtPrice ? { compareAtPrice: null } : {}),
+      ...(form.compareAtPrice !== '' ? { compareAtPrice: Number(form.compareAtPrice) } : product?.listCompareAtPrice ? { compareAtPrice: null } : {}),
+      discountType: form.discountType && form.discountValue !== '' ? form.discountType : null,
+      discountValue: form.discountType && form.discountValue !== '' ? Number(form.discountValue) : null,
     };
     const res = await mutate(product ? `/admin/products/${product.id}` : '/admin/products', { method: product ? 'PUT' : 'POST', body }, `${body.name} ${product ? 'updated' : 'added to the catalogue'}`);
     if (res) onSaved();
@@ -145,6 +151,11 @@ function ProductModal({ product, categories, onClose, onSaved }) {
       <div className="form-row">
         <label>Category<select required value={form.category} onChange={(e) => set({ category: e.target.value })}>{categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select></label>
         <label>Price (₦)<input required type="number" min="1" value={form.price} onChange={(e) => set({ price: e.target.value })} placeholder="20000"/></label>
+      </div>
+      <div className="form-row">
+        <label>Discount type<select value={form.discountType} onChange={(e) => set({ discountType: e.target.value, discountValue: e.target.value ? form.discountValue : '' })}><option value="">No discount</option><option value="percent">Percentage (%)</option><option value="amount">Amount (₦)</option></select></label>
+        <label>{form.discountType === 'amount' ? 'Discount amount (₦)' : 'Discount percentage (%)'}<input type="number" min="1" max={form.discountType === 'percent' ? 90 : undefined} disabled={!form.discountType} required={!!form.discountType} value={form.discountValue} onChange={(e) => set({ discountValue: e.target.value })} placeholder={form.discountType === 'amount' ? '2000' : '10'}/>
+          {finalPrice != null && <small className="form-hint">Customers pay {money(finalPrice)} (was {money(Number(form.price))})</small>}</label>
       </div>
       <div className="form-row">
         <label>Compare-at price (₦, optional)<input type="number" min="0" value={form.compareAtPrice} onChange={(e) => set({ compareAtPrice: e.target.value })}/></label>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X } from 'lucide-react';
-import { categories, getFacets, getProducts, SORT_OPTIONS } from '../api/catalogue';
+import { useCategories, getFacets, getProducts, SORT_OPTIONS } from '../api/catalogue';
 import { SIZES } from '../data/products.mock';
 import useAsync from '../lib/useAsync';
 import ProductCard from '../components/product/ProductCard';
@@ -17,6 +17,7 @@ export default function Shop() {
 
   const { data: loadedFacets } = useAsync(() => getFacets(category), [category]);
   const facets = loadedFacets ?? { sizes: SIZES, colors: [], maxPrice: 0, minPrice: 0 };
+  const categories = useCategories();
   const categoryInfo = category ? categories.find((c) => c.slug === category) : null;
 
   const filters = {

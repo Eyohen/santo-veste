@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronDown, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { categories, getProduct, getRelated, imagesFor } from '../api/catalogue';
+import { useCategories, getProduct, getRelated, imagesFor } from '../api/catalogue';
 import useAsync from '../lib/useAsync';
 import { useCart } from '../store/CartContext';
 import { useWishlist } from '../store/WishlistContext';
@@ -27,6 +27,7 @@ function Accordion({ title, children, defaultOpen = false }) {
 }
 
 function ProductView({ product }) {
+  const categories = useCategories();
   const { addItem } = useCart();
   const { has, toggle } = useWishlist();
 
@@ -41,9 +42,15 @@ function ProductView({ product }) {
   // Prefer the first colour that still has stock.
   const firstAvailable = colors.find((c) => product.variants.some((v) => v.color === c.name && v.stock > 0)) ?? colors[0];
   const [colorName, setColorName] = useState(firstAvailable.name);
-  const [size, setSize] = useState(null);
+  // A size is always pre-selected (the first one in stock) so the remaining count shows straight away.
+  const inStockSizes = (name) => product.variants.filter((v) => v.color === name && v.stock > 0).map((v) => v.size);
+  const [size, setSize] = useState(() => inStockSizes(firstAvailable.name)[0] ?? null);
 
-  useEffect(() => setSize(null), [colorName]);
+  const chooseColor = (name) => {
+    const sizes = inStockSizes(name);
+    setColorName(name);
+    setSize((cur) => (sizes.includes(cur) ? cur : sizes[0] ?? null)); // keep the same size when the new colour has it
+  };
 
   const color = colors.find((c) => c.name === colorName);
   const colorVariants = product.variants.filter((v) => v.color === colorName);
@@ -91,21 +98,29 @@ function ProductView({ product }) {
           <p className="text-sm text-muted">{category?.name}</p>
           <h1 className="display mt-2 text-2xl sm:text-3xl">{product.name}</h1>
           <p className="mt-4 flex items-baseline gap-3 text-lg">
-            <span className="font-semibold">{formatPrice(product.price)}</span>
+            <span className={product.compareAtPrice > product.price ? 'font-semibold text-signal' : 'font-semibold'}>{formatPrice(product.price)}</span>
+            {product.compareAtPrice > product.price && (
+              <>
+                <span className="text-sm text-muted line-through">{formatPrice(product.compareAtPrice)}</span>
+                {product.discountType === 'percent' && <span className="text-xs font-semibold text-signal">{product.discountValue}% off</span>}
+              </>
+            )}
           </p>
 
           <div className="mt-8">
             <p className="mb-3 text-sm">
               <span className="font-semibold">Colour</span> <span className="text-muted">{color.name}</span>
             </p>
-            <ColorSwatches colors={colors} selected={colorName} onSelect={setColorName} />
+            <ColorSwatches colors={colors} selected={colorName} onSelect={chooseColor} />
           </div>
 
           <div className="mt-8">
             <p className="mb-3 flex justify-between text-sm">
               <span className="font-semibold">Size</span>
-              {selected && selected.stock <= 3 && selected.stock > 0 && (
-                <span className="font-semibold text-signal">Only {selected.stock} left</span>
+              {selected && selected.stock > 0 && (
+                <span className={`font-semibold ${selected.stock <= 5 ? 'text-signal' : 'text-muted'}`} aria-live="polite">
+                  {selected.stock <= 5 ? `Only ${selected.stock} left` : `${selected.stock} remaining`}
+                </span>
               )}
             </p>
             <SizePicker variants={colorVariants} selected={size} onSelect={setSize} />

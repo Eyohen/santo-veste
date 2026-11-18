@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Header from './Header';
 import Footer from './Footer';
 import CartDrawer from './CartDrawer';
-import { BRAND } from '../../lib/brand';
+import AnnouncementTicker from './AnnouncementTicker';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -23,11 +23,7 @@ export default function Layout() {
       >
         Skip to content
       </a>
-      <div className="bg-asphalt py-2 text-center text-xs font-medium text-paper">
-        <Link to="/custom" className="hover:underline">
-          Custom and bulk orders from {BRAND.moq} pieces. Request a quote
-        </Link>
-      </div>
+      <AnnouncementTicker />
       <Header />
       <ScrollToTop />
       <main id="main" className="flex-1">

@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { categories } from '../../api/catalogue';
+import { useCategories } from '../../api/catalogue';
 import { BRAND } from '../../lib/brand';
 
 export default function Footer() {
+  const categories = useCategories();
   const subscribe = (e) => {
     e.preventDefault();
     e.currentTarget.reset();

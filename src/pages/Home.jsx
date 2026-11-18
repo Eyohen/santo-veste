@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { categories, getProducts } from '../api/catalogue';
+import { useCategories, getProducts } from '../api/catalogue';
 import useAsync from '../lib/useAsync';
 import ProductCard from '../components/product/ProductCard';
 import { BRAND } from '../lib/brand';
@@ -185,6 +185,7 @@ function Pillars() {
 }
 
 function CategoryTiles() {
+  const categories = useCategories();
   return (
     <section className="container-x mt-24" aria-labelledby="cats-title">
       <h2 id="cats-title" className="display mb-8 text-2xl sm:text-3xl">
@@ -194,12 +195,14 @@ function CategoryTiles() {
         {categories.map((c) => (
           <li key={c.slug}>
             <Link to={`/shop/${c.slug}`} className="group relative block aspect-[4/5] overflow-hidden bg-chalk">
-              <img
-                src={c.image}
-                alt=""
-                loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-              />
+              {c.image && (
+                <img
+                  src={c.image}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+              )}
               <span className="display absolute bottom-0 left-0 bg-paper px-4 py-2.5 text-sm sm:text-base">{c.name}</span>
             </Link>
           </li>

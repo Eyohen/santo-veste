@@ -1,6 +1,7 @@
 // The only module that knows where catalogue data comes from: the Santo Veste API.
 // Return shapes are unchanged from the mock days, so pages don't care.
 
+import { useEffect, useState } from 'react';
 import { api } from './client';
 import { categories, SIZES } from '../data/products.mock';
 
@@ -99,3 +100,17 @@ export async function getFacets(category) {
 }
 
 export { categories };
+
+// Categories are managed in Admin > Categories. The built-in list shows until the API answers.
+let liveCategories = null;
+let categoriesRequest = null;
+export function useCategories() {
+  const [list, setList] = useState(liveCategories ?? categories);
+  useEffect(() => {
+    categoriesRequest ??= api('/categories', { token: null }).then((res) => { liveCategories = res.categories; return liveCategories; }, () => { categoriesRequest = null; return null; });
+    let live = true;
+    categoriesRequest.then((c) => { if (live && c) setList(c); });
+    return () => { live = false; };
+  }, []);
+  return list;
+}
