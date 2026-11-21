@@ -102,7 +102,7 @@ function ProductView({ product }) {
             {product.compareAtPrice > product.price && (
               <>
                 <span className="text-sm text-muted line-through">{formatPrice(product.compareAtPrice)}</span>
-                {product.discountType === 'percent' && <span className="text-xs font-semibold text-signal">{product.discountValue}% off</span>}
+                <span className="text-xs font-semibold text-signal">{Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}% off</span>
               </>
             )}
           </p>
