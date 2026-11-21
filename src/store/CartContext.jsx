@@ -47,6 +47,17 @@ export function CartProvider({ children }) {
     [lines, setLines],
   );
 
+  /** A customer-designed t-shirt. Priced by the server at checkout; `price` here is only for display. */
+  const addCustom = useCallback((design, size, qty, price) => {
+    const sku = `custom-${design.id}-${size}`;
+    setLines((current) => {
+      const found = current.find((l) => l.sku === sku);
+      if (found) return current.map((l) => (l.sku === sku ? { ...l, qty: Math.min(found.qty + qty, 50) } : l));
+      return [...current, { sku, designId: design.id, slug: null, name: 'Custom T-shirt', price, color: 'Black', colorHex: '#171714', size, stock: 50, image: design.previewUrl, qty }];
+    });
+    setIsOpen(true);
+  }, [setLines]);
+
   const setQty = useCallback(
     (sku, qty) => {
       setLines((current) =>
@@ -72,11 +83,12 @@ export function CartProvider({ children }) {
       openCart: () => setIsOpen(true),
       closeCart: () => setIsOpen(false),
       addItem,
+      addCustom,
       setQty,
       removeItem,
       clear,
     };
-  }, [lines, isOpen, addItem, setQty, removeItem, clear]);
+  }, [lines, isOpen, addItem, addCustom, setQty, removeItem, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

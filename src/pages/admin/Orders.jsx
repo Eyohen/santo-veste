@@ -76,7 +76,7 @@ function OrderDrawer({ id, onClose, onSaved }) {
         <section className="detail-block"><h3>Items</h3>
           {(o.items || []).map((it) => <div className="detail-item" key={it.sku}>
             {it.image ? <img src={imgSrc(it.image)} alt=""/> : <span className="img-ph"/>}
-            <div><b>{it.name}</b><small>{it.color} · {it.size} · {it.sku}</small></div><span>{it.quantity} × {money(it.unitPrice)}</span><b>{money(it.lineTotal)}</b></div>)}
+            <div><b>{it.name}</b><small>{it.color} · {it.size} · {it.sku}</small>{it.artworkUrl && <small><a href={it.artworkUrl} target="_blank" rel="noreferrer" download>Download print artwork</a></small>}</div><span>{it.quantity} × {money(it.unitPrice)}</span><b>{money(it.lineTotal)}</b></div>)}
           <dl className="totals"><div><dt>Subtotal</dt><dd>{money(o.subtotal)}</dd></div>
             {o.discountAmount > 0 && <div><dt>Discount{o.discountCode ? ` (${o.discountCode})` : ''}</dt><dd>-{money(o.discountAmount)}</dd></div>}
             <div><dt>Shipping</dt><dd>{money(o.shippingFee)}</dd></div><div className="grand"><dt>Total</dt><dd>{money(o.total)}</dd></div></dl></section>

@@ -92,6 +92,9 @@ export default function Header() {
           >
             Shop
           </button>
+          <NavLink to="/design" className={navLink}>
+            Design your own
+          </NavLink>
           <NavLink to="/custom" className={navLink}>
             Custom orders
           </NavLink>
@@ -189,6 +192,7 @@ export default function Header() {
             {[
               ['All products', '/shop'],
               ...categories.map((c) => [c.name, `/shop/${c.slug}`]),
+              ['Design your own', '/design'],
               ['Custom orders', '/custom'],
               ['About', '/about'],
               ['Account', '/account'],

@@ -3,6 +3,7 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import Product from './pages/Product';
+import Design from './pages/Design';
 import Custom from './pages/Custom';
 import About from './pages/About';
 import Checkout from './pages/Checkout';
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/shop/:category" element={<Shop />} />
         <Route path="/product/:slug" element={<Product />} />
+        <Route path="/design" element={<Design />} />
         <Route path="/custom" element={<Custom />} />
         <Route path="/about" element={<About />} />
         <Route path="/checkout" element={<Checkout />} />

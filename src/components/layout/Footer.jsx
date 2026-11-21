@@ -55,6 +55,7 @@ export default function Footer() {
           <p className="mb-4 text-sm text-paper/60">Santo Veste</p>
           <ul className="space-y-2.5 text-sm">
             <li><Link to="/about" className="hover:underline">About us</Link></li>
+            <li><Link to="/design" className="hover:underline">Design your own t-shirt</Link></li>
             <li><Link to="/custom" className="hover:underline">Custom and bulk orders</Link></li>
             <li><Link to="/account" className="hover:underline">Track your order</Link></li>
           </ul>

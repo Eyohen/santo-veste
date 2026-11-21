@@ -63,7 +63,7 @@ export default function CartDrawer() {
                 <ul className="flex-1 divide-y divide-asphalt/10 overflow-y-auto px-5">
                   {lines.map((l) => (
                     <li key={l.sku} className="flex gap-4 py-5">
-                      <Link to={`/product/${l.slug}`} onClick={closeCart} className="block h-28 w-24 shrink-0 overflow-hidden bg-chalk">
+                      <Link to={l.designId ? '/design' : `/product/${l.slug}`} onClick={closeCart} className="block h-28 w-24 shrink-0 overflow-hidden bg-chalk">
                         <ProductImage src={l.image} alt={l.name} shape={l.shape} color={l.colorHex} />
                       </Link>
                       <div className="flex min-w-0 flex-1 flex-col">

@@ -1,10 +1,10 @@
 // Storefront calls that aren't catalogue reads: delivery rates, checkout, orders, quote requests.
-import { api } from './client';
+import { api, API_BASE } from './client';
 import { invalidateCatalogue } from './catalogue';
 
 export const getDeliveryFees = async () => (await api('/delivery-fees')).deliveryFees;
 
-const toItems = (lines) => lines.map((l) => ({ sku: l.sku, qty: l.qty }));
+const toItems = (lines) => lines.map((l) => (l.designId ? { designId: l.designId, size: l.size, qty: l.qty } : { sku: l.sku, qty: l.qty }));
 
 /** Server-priced totals for the bag, including any discount code. */
 export const quoteCart = ({ lines, state, discountCode }) =>
@@ -24,3 +24,15 @@ export async function verifyPayment(reference) {
 export const trackOrder = async (orderNumber, email) => (await api('/orders/track', { query: { orderNumber, email } })).order;
 
 export const submitCustomRequest = (body) => api('/custom-requests', { method: 'POST', body });
+
+/** Saves a customer's t-shirt design (mockup + print artwork, both PNG blobs). Returns { id, previewUrl, price }. */
+export async function saveDesign({ model, preview, artwork }) {
+  const form = new FormData();
+  form.append('model', model);
+  form.append('preview', preview, 'preview.png');
+  form.append('artwork', artwork, 'artwork.png');
+  const res = await fetch(`${API_BASE}/custom-designs`, { method: 'POST', body: form });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || 'Could not save your design. Please try again.');
+  return data;
+}
