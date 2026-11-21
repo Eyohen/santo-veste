@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useCategories, getProducts } from '../api/catalogue';
+import { api } from '../api/client';
 import useAsync from '../lib/useAsync';
 import ProductCard from '../components/product/ProductCard';
 import { BRAND } from '../lib/brand';
@@ -45,30 +46,35 @@ function Hero() {
   );
 }
 
-const heroSlides = [
+const defaultSlides = [
   {
     src: '/brand/photo/hero-stairs.webp',
-    position: 'object-[60%_40%]',
+    focusX: 60,
+    focusY: 40,
     alt: 'A man in a black corduroy shirt-jacket and cream trousers sits on pale concrete steps under a blue sky',
   },
   {
     src: '/brand/photo/pair-arch.webp',
-    position: 'object-[40%_30%]',
+    focusX: 40,
+    focusY: 30,
     alt: 'A man and a woman in stone-coloured tees stand in front of an arched wall',
   },
   {
     src: '/brand/photo/man-looking-up.webp',
-    position: 'object-[50%_30%]',
+    focusX: 50,
+    focusY: 30,
     alt: 'A man in a stone-coloured jacket and white tee looks up, lit by warm sun against curved concrete',
   },
   {
     src: '/brand/photo/pink-corduroy.webp',
-    position: 'object-[50%_25%]',
+    focusX: 50,
+    focusY: 25,
     alt: 'A man in a pink corduroy jacket and cream trousers looks down at the camera',
   },
   {
     src: '/brand/photo/woman-black-tee.webp',
-    position: 'object-[50%_25%]',
+    focusX: 50,
+    focusY: 25,
     alt: 'A woman in sunglasses and a black tee, lit by warm sun',
   },
 ];
@@ -79,15 +85,25 @@ const SLIDE_MS = 2500;
 // or keyboard focus is on the panel, and is off for visitors who prefer
 // reduced motion (they can still step through with the dots).
 function HeroSlideshow({ children }) {
+  // Slides are managed in Admin > Hero images. Nothing is drawn until they arrive; the original photos are the fallback.
+  const [heroSlides, setHeroSlides] = useState([]);
+  useEffect(() => {
+    let live = true;
+    api('/hero-slides', { token: null }).then(
+      (res) => live && setHeroSlides(res.slides?.length ? res.slides : defaultSlides),
+      () => live && setHeroSlides(defaultSlides),
+    );
+    return () => { live = false; };
+  }, []);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (paused || reduceMotion) return undefined;
+    if (paused || reduceMotion || heroSlides.length < 2) return undefined;
     const id = setInterval(() => setIndex((i) => (i + 1) % heroSlides.length), SLIDE_MS);
     return () => clearInterval(id);
-  }, [paused, reduceMotion, index]);
+  }, [paused, reduceMotion, index, heroSlides.length]);
 
   return (
     <motion.section
@@ -105,11 +121,12 @@ function HeroSlideshow({ children }) {
         const active = i === index;
         return (
           <img
-            key={slide.src}
+            key={slide.id ?? slide.src}
             src={slide.src}
             alt={active ? slide.alt : ''}
             aria-hidden={!active}
-            className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-[1400ms] ease-out motion-reduce:transition-none ${slide.position} ${
+            style={{ objectPosition: `${slide.focusX}% ${slide.focusY}%` }}
+            className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-[1400ms] ease-out motion-reduce:transition-none ${
               active ? 'scale-100 opacity-100' : 'scale-[1.04] opacity-0'
             }`}
           />
@@ -120,7 +137,7 @@ function HeroSlideshow({ children }) {
 
       {children}
 
-      <div className="absolute bottom-4 right-4 z-20 flex bg-paper/90 px-1 py-0.5" role="group" aria-label="Hero photographs">
+      {heroSlides.length > 1 && <div className="absolute bottom-4 right-4 z-20 flex bg-paper/90 px-1 py-0.5" role="group" aria-label="Hero photographs">
         {heroSlides.map((slide, i) => (
           <button
             key={slide.src}
@@ -133,7 +150,7 @@ function HeroSlideshow({ children }) {
             <span className={`block h-0.5 w-5 transition-colors ${i === index ? 'bg-asphalt' : 'bg-asphalt/30'}`} />
           </button>
         ))}
-      </div>
+      </div>}
     </motion.section>
   );
 }

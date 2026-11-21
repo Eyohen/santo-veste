@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpRight, Bell, CreditCard, Eye, LayoutDashboard, Loader2, LogOut, Menu, MessageSquare,
-  Megaphone, Package, Plus, Tags, Search, Settings, ShoppingBag, Tag, Truck, Users, X,
+  Images, Megaphone, Package, Plus, Tags, Search, Settings, ShoppingBag, Tag, Truck, Users, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api, getToken, setToken } from '../api/client';
@@ -16,6 +16,7 @@ import Transactions from './admin/Transactions';
 import Delivery from './admin/Delivery';
 import Announcements from './admin/Announcements';
 import Categories from './admin/Categories';
+import HeroImages from './admin/HeroImages';
 import Customers from './admin/Customers';
 import CustomRequests from './admin/CustomRequests';
 import './admin.css';
@@ -30,6 +31,7 @@ const nav = [
   { id: 'discounts', label: 'Discounts', icon: Tag },
   { id: 'transactions', label: 'Transactions', icon: CreditCard },
   { id: 'delivery', label: 'Delivery', icon: Truck },
+  { id: 'hero', label: 'Hero images', icon: Images },
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
   { id: 'customers', label: 'Customers', icon: Users },
 ];
@@ -37,7 +39,7 @@ const titles = {
   dashboard: ['Overview', 'A clear look at how Santo Veste is performing.'], orders: ['Orders', 'Track and fulfil every customer order.'],
   custom: ['Custom orders', 'Bulk and custom quote requests from the storefront.'], products: ['Products', 'Manage the Santo Veste catalogue and stock.'],
   discounts: ['Discounts', 'Create promo codes and manage ongoing offers.'], transactions: ['Transactions', 'Review payments, transfers, and refunds.'],
-  delivery: ['Delivery', 'Set delivery pricing across Nigeria’s 36 states.'], categories: ['Categories', 'Organise your catalogue into collections shoppers can browse.'], announcements: ['Announcements', 'Messages that scroll across the top of the storefront.'], customers: ['Customers', 'Your customers and their order history.'],
+  delivery: ['Delivery', 'Set delivery pricing across Nigeria’s 36 states.'], hero: ['Hero images', 'The photographs cycling at the top of the landing page.'], categories: ['Categories', 'Organise your catalogue into collections shoppers can browse.'], announcements: ['Announcements', 'Messages that scroll across the top of the storefront.'], customers: ['Customers', 'Your customers and their order history.'],
 };
 
 export default function Admin() {
@@ -88,6 +90,7 @@ function Shell({ user, onSignOut }) {
     delivery: <Delivery/>,
     announcements: <Announcements/>,
     categories: <Categories/>,
+    hero: <HeroImages/>,
     customers: <Customers/>,
   }[page];
 
