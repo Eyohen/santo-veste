@@ -26,10 +26,11 @@ export const trackOrder = async (orderNumber, email) => (await api('/orders/trac
 export const submitCustomRequest = (body) => api('/custom-requests', { method: 'POST', body });
 
 /** Saves a customer's t-shirt design (mockup + print artwork, both PNG blobs). Returns { id, previewUrl, price }. */
-export async function saveDesign({ model, preview, artwork }) {
+export async function saveDesign({ model, printSize, preview, artwork }) {
   const form = new FormData();
   form.append('model', model);
-  form.append('preview', preview, 'preview.png');
+  form.append('printSize', printSize);
+  form.append('preview', preview, 'preview.jpg');
   form.append('artwork', artwork, 'artwork.png');
   const res = await fetch(`${API_BASE}/custom-designs`, { method: 'POST', body: form });
   const data = await res.json().catch(() => ({}));

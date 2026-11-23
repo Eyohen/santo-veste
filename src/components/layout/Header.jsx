@@ -79,6 +79,7 @@ export default function Header() {
   }, [menuOpen]);
 
   return (
+    <>
     <header className="sticky top-0 z-30 bg-paper/95 backdrop-blur" onMouseLeave={() => setMega(false)}>
       <div className="container-x relative grid h-16 grid-cols-[1fr_auto_1fr] items-center border-b border-asphalt/10">
         <nav aria-label="Main" className="hidden items-center gap-7 lg:flex">
@@ -179,8 +180,10 @@ export default function Header() {
           </div>
         </div>
       )}
+    </header>
 
-      {menuOpen && (
+    {/* Outside the header on purpose: its backdrop-blur would otherwise become this fixed panel's containing block and squash it to the header's height. */}
+    {menuOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-paper lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="container-x flex h-16 items-center justify-between border-b border-asphalt/10">
             <img src="/brand/lockup-horizontal.png" alt="Santo Veste" className="h-8 w-auto" />
@@ -204,6 +207,6 @@ export default function Header() {
           </nav>
         </div>
       )}
-    </header>
+    </>
   );
 }

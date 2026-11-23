@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { ImagePlus, Minus, Plus, RotateCw, Trash2, Type } from 'lucide-react';
+import { ImagePlus, Minus, Plus, RotateCw, Trash2, Type, X } from 'lucide-react';
 import { saveDesign } from '../api/shop';
 import { useCart } from '../store/CartContext';
 import { formatPrice } from '../lib/format';
@@ -10,8 +10,18 @@ const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 const PHOTO = { w: 1080, h: 1350 };
 // The chest print area, as fractions of the 1080x1350 photo.
 const MODELS = {
-  man: { label: 'Men', src: '/BG man stone wash.jpg', area: { x: 0.3, y: 0.4, w: 0.4, h: 0.36 } },
-  woman: { label: 'Women', src: '/BG wMAN.jpg', area: { x: 0.3, y: 0.42, w: 0.4, h: 0.36 } },
+  man: { label: 'Men', src: '/BG man stone wash.jpg', top: 0.45 },
+  woman: { label: 'Women', src: '/BG wMAN.jpg', top: 0.47 },
+};
+// Print sizes are real paper sizes (portrait, in cm). On the photos the shirt body is about 10.5 px per cm,
+// so each size covers a true-to-scale part of the chest. The area is centred and starts `top` down the photo.
+const PRINT_SIZES = { A4: { w: 21, h: 29.7 }, A3: { w: 29.7, h: 42 }, A2: { w: 42, h: 59.4 } };
+const PX_PER_CM = 10.5;
+const ART_DPI = 150; // resolution of the print-ready artwork
+const areaFor = (model, printSize) => {
+  const w = (PRINT_SIZES[printSize].w * PX_PER_CM) / PHOTO.w;
+  const h = (PRINT_SIZES[printSize].h * PX_PER_CM) / PHOTO.h;
+  return { x: 0.5 - w / 2, y: MODELS[model].top, w, h };
 };
 const FONTS = [
   { label: 'Bold', family: 'Anton' },
@@ -26,11 +36,11 @@ const LINE = 1.15;
 const GRAPHICS = [
   { file: '2B8D83B9-2A6E-44F7-854D-3AF26B06FA96.svg', name: 'Omo Mehn!' },
   { file: '5D7C55E2-4B00-4576-BAF3-8B55EA02CE5F.svg', name: 'Omooo… Things Dey Occur!' },
-  { file: 'Group 10840.svg', name: 'God Abeg' },
-  { file: 'Group 10843.svg', name: 'No Put Me For…' },
+  { file: 'Group 10840.svg', name: 'God Abeg!' },
+  { file: 'Group 10843.svg', name: 'No Put Me For Talk Abeg' },
   { file: 'Group 10847.svg', name: 'Santo Veste' },
   { file: 'Group 10850.svg', name: 'Soro Soke Generation' },
-  { file: 'Group 10859.svg', name: 'No Worry Body Go…' },
+  { file: 'Group 10859.svg', name: 'No Worry Body Go Tell You' },
   { file: 'Group 10865.svg', name: 'Naija All The Way' },
   { file: 'Group 10914.svg', name: 'Made in Nigeria' },
 ].map((g) => ({ ...g, src: `/custom/${encodeURIComponent(g.file)}` }));
@@ -67,7 +77,7 @@ const loadImage = (src) => new Promise((resolve, reject) => {
   img.onerror = reject;
   img.src = src;
 });
-const toBlob = (canvas) => new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+const toBlob = (canvas, type = 'image/png', quality) => new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 
 export default function Design() {
   const { addCustom } = useCart();
@@ -75,6 +85,7 @@ export default function Design() {
   const [layers, setLayers] = useState([]);
   const [selected, setSelected] = useState(null);
   const [size, setSize] = useState('M');
+  const [printSize, setPrintSize] = useState('A3');
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const images = useRef(new Map()); // layer id -> loaded HTMLImageElement
@@ -83,6 +94,7 @@ export default function Design() {
   const drag = useRef(null);
 
   const m = MODELS[model];
+  const area = areaFor(model, printSize);
   const sel = layers.find((l) => l.id === selected);
 
   useEffect(() => {
@@ -116,7 +128,7 @@ export default function Design() {
       const img = await loadImage(url);
       const id = nextId++;
       images.current.set(id, img);
-      add({ id, type: 'image', src: url, cx: 0.5, cy: 0.5, size: 0.5, rot: 0 });
+      add({ id, type: 'image', label: file.name, src: url, cx: 0.5, cy: 0.5, size: 0.5, rot: 0 });
     } catch { toast.error('We could not read that image.'); }
   };
 
@@ -125,16 +137,33 @@ export default function Design() {
       const img = await loadImage(g.src);
       const id = nextId++;
       images.current.set(id, img);
-      add({ id, type: 'image', src: g.src, cx: 0.5, cy: 0.5, size: 0.7, rot: 0 });
+      add({ id, type: 'image', label: g.name, src: g.src, cx: 0.5, cy: 0.5, size: 0.7, rot: 0 });
     } catch { toast.error('We could not load that graphic.'); }
   };
 
-  const remove = () => {
-    if (!sel) return;
-    images.current.delete(sel.id);
-    setLayers((ls) => ls.filter((l) => l.id !== sel.id));
+  const removeLayer = useCallback((id) => {
+    images.current.delete(id);
+    setLayers((ls) => ls.filter((l) => l.id !== id));
+    setSelected((cur) => (cur === id ? null : cur));
+  }, []);
+  const clearAll = () => {
+    if (!window.confirm('Remove everything from your design?')) return;
+    images.current.clear();
+    setLayers([]);
     setSelected(null);
   };
+
+  // Delete / Backspace removes the selected item (unless the customer is typing).
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.key !== 'Delete' && e.key !== 'Backspace') || selected == null) return;
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      e.preventDefault();
+      removeLayer(selected);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selected, removeLayer]);
 
   const down = (e, l) => {
     e.stopPropagation();
@@ -159,8 +188,8 @@ export default function Design() {
       const photo = await loadImage(m.src);
 
       // Print-ready artwork: just the design, transparent background, high resolution.
-      const aw = 1600;
-      const ah = Math.round(aw * ((m.area.h * PHOTO.h) / (m.area.w * PHOTO.w)));
+      const aw = Math.round((PRINT_SIZES[printSize].w / 2.54) * ART_DPI);
+      const ah = Math.round((PRINT_SIZES[printSize].h / 2.54) * ART_DPI);
       const art = document.createElement('canvas'); art.width = aw; art.height = ah;
       drawLayers(art.getContext('2d'), layers, aw, ah, images.current);
 
@@ -168,21 +197,21 @@ export default function Design() {
       const mock = document.createElement('canvas'); mock.width = PHOTO.w; mock.height = PHOTO.h;
       const mc = mock.getContext('2d');
       mc.drawImage(photo, 0, 0, PHOTO.w, PHOTO.h);
-      const bw = m.area.w * PHOTO.w; const bh = m.area.h * PHOTO.h;
+      const bw = area.w * PHOTO.w; const bh = area.h * PHOTO.h;
       mc.save();
-      mc.translate(m.area.x * PHOTO.w, m.area.y * PHOTO.h);
+      mc.translate(area.x * PHOTO.w, area.y * PHOTO.h);
       mc.beginPath(); mc.rect(0, 0, bw, bh); mc.clip();
       drawLayers(mc, layers, bw, bh, images.current);
       mc.restore();
 
-      const [preview, artwork] = await Promise.all([toBlob(mock), toBlob(art)]);
-      const design = await saveDesign({ model, preview, artwork });
-      addCustom(design, size, qty, PRICE);
+      const [preview, artwork] = await Promise.all([toBlob(mock, 'image/jpeg', 0.9), toBlob(art)]);
+      const design = await saveDesign({ model, printSize, preview, artwork });
+      addCustom(design, size, qty, PRICE, printSize);
       toast.success('Added to your bag');
     } catch (err) {
       toast.error(err.message || 'Could not save your design. Please try again.');
     } finally { setBusy(false); }
-  }, [layers, m, model, size, qty, addCustom]);
+  }, [layers, m, model, area, printSize, size, qty, addCustom]);
 
   return (
     <div className="container-x py-10">
@@ -196,19 +225,28 @@ export default function Design() {
             <div
               ref={areaRef}
               className="absolute overflow-hidden border border-dashed border-white/60"
-              style={{ left: `${m.area.x * 100}%`, top: `${m.area.y * 100}%`, width: `${m.area.w * 100}%`, height: `${m.area.h * 100}%` }}
+              style={{ left: `${area.x * 100}%`, top: `${area.y * 100}%`, width: `${area.w * 100}%`, height: `${area.h * 100}%` }}
               aria-label="Print area"
             >
               {layers.map((l) => {
+                const isSel = l.id === selected;
                 const style = { left: `${l.cx * 100}%`, top: `${l.cy * 100}%`, transform: `translate(-50%, -50%) rotate(${l.rot}deg)` };
-                const ring = l.id === selected ? 'outline outline-1 outline-offset-2 outline-white' : '';
-                return l.type === 'image' ? (
-                  <img key={l.id} src={l.src} alt="" draggable={false} className={`absolute cursor-move touch-none ${ring}`} style={{ ...style, width: `${l.size * 100}%` }}
-                    onPointerDown={(e) => down(e, l)} onPointerMove={move} onPointerUp={up} />
-                ) : (
-                  <div key={l.id} className={`absolute cursor-move touch-none whitespace-pre text-center ${ring}`}
-                    style={{ ...style, color: l.color, fontFamily: `"${l.family}"`, fontWeight: l.family === 'Montserrat' || l.family === 'Playfair Display' ? 700 : 400, fontSize: l.size * areaW, lineHeight: LINE }}
-                    onPointerDown={(e) => down(e, l)} onPointerMove={move} onPointerUp={up}>{l.text}</div>
+                const textStyle = { color: l.color, fontFamily: `"${l.family}"`, fontWeight: l.family === 'Montserrat' || l.family === 'Playfair Display' ? 700 : 400, fontSize: l.size * areaW, lineHeight: LINE };
+                return (
+                  <div key={l.id} className={`absolute cursor-move touch-none ${isSel ? 'outline outline-1 outline-offset-2 outline-white' : ''}`}
+                    style={l.type === 'image' ? { ...style, width: `${l.size * 100}%` } : style}
+                    onPointerDown={(e) => down(e, l)} onPointerMove={move} onPointerUp={up}>
+                    {l.type === 'image'
+                      ? <img src={l.src} alt="" draggable={false} className="block w-full" />
+                      : <div className="whitespace-pre text-center" style={textStyle}>{l.text}</div>}
+                    {isSel && (
+                      <button type="button" aria-label="Remove this item" title="Remove (Delete key)"
+                        onPointerDown={(e) => e.stopPropagation()} onClick={() => removeLayer(l.id)}
+                        className="absolute right-0 top-0 grid h-6 w-6 place-items-center rounded-full bg-signal text-paper shadow">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -228,6 +266,19 @@ export default function Design() {
           </div>
 
           <div>
+            <p className="mb-3 text-sm font-semibold">Print size</p>
+            <div role="radiogroup" aria-label="Print size" className="flex flex-wrap gap-2">
+              {Object.entries(PRINT_SIZES).map(([k, v]) => (
+                <button key={k} type="button" role="radio" aria-checked={printSize === k} onClick={() => setPrintSize(k)}
+                  className={`px-5 py-2.5 text-left text-sm font-semibold ${printSize === k ? 'bg-asphalt text-paper' : 'border border-asphalt/25 hover:border-asphalt'}`}>
+                  {k}<span className="block text-xs font-normal opacity-70">{v.w} × {v.h} cm</span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted">The dashed box shows how big the print will be on the shirt. A4 is a small chest print and A2 is a large full-front print.</p>
+          </div>
+
+          <div>
             <p className="mb-3 text-sm font-semibold">Add to your design</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={addText} className="btn-outline"><Type size={16} /> Add text</button>
@@ -237,14 +288,37 @@ export default function Design() {
             <p className="mt-2 text-xs text-muted">PNG, JPG or WEBP, up to 5 MB. Transparent PNGs print best.</p>
           </div>
 
+          {layers.length > 0 && (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-semibold">Your design <span className="font-normal text-muted">({layers.length})</span></p>
+                <button type="button" onClick={clearAll} className="text-sm text-signal underline underline-offset-4">Clear all</button>
+              </div>
+              <ul className="divide-y divide-asphalt/10 border border-asphalt/15">
+                {[...layers].reverse().map((l) => (
+                  <li key={l.id} className={`flex items-center gap-3 p-2 ${l.id === selected ? 'bg-chalk' : ''}`}>
+                    <button type="button" onClick={() => setSelected(l.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={`Select ${l.type === 'text' ? l.text : l.label}`}>
+                      {l.type === 'image'
+                        ? <span className="grid h-10 w-10 shrink-0 place-items-center bg-asphalt p-1"><img src={l.src} alt="" className="h-full w-full object-contain" /></span>
+                        : <span className="grid h-10 w-10 shrink-0 place-items-center bg-asphalt text-paper"><Type size={16} /></span>}
+                      <span className="truncate text-sm">{l.type === 'text' ? l.text.replace(/\n/g, ' ') || 'Text' : l.label}</span>
+                    </button>
+                    <button type="button" onClick={() => removeLayer(l.id)} aria-label={`Remove ${l.type === 'text' ? l.text : l.label}`}
+                      className="grid h-10 w-10 shrink-0 place-items-center text-signal hover:bg-signal/10"><Trash2 size={18} /></button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div>
             <p className="mb-3 text-sm font-semibold">Ready-made graphics</p>
             <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
               {GRAPHICS.map((g) => (
                 <li key={g.file}>
                   <button type="button" onClick={() => addGraphic(g)} title={g.name} aria-label={`Add graphic: ${g.name}`}
-                    className="grid aspect-square w-full place-items-center bg-asphalt p-2 ring-asphalt hover:ring-2 hover:ring-offset-2">
-                    <img src={g.src} alt="" loading="lazy" draggable={false} className="max-h-full max-w-full object-contain" />
+                    className="block aspect-square w-full overflow-hidden bg-asphalt p-2 ring-asphalt hover:ring-2 hover:ring-offset-2">
+                    <img src={g.src} alt="" loading="lazy" draggable={false} className="h-full w-full object-contain" />
                   </button>
                 </li>
               ))}
@@ -255,7 +329,7 @@ export default function Design() {
           {sel && (
             <div className="space-y-4 border border-asphalt/15 p-4">
               <div className="flex items-center justify-between"><p className="text-sm font-semibold">{sel.type === 'text' ? 'Text' : 'Image'}</p>
-                <button type="button" onClick={remove} className="inline-flex items-center gap-1.5 text-sm text-signal"><Trash2 size={15} /> Remove</button></div>
+                <button type="button" onClick={() => removeLayer(sel.id)} className="inline-flex items-center gap-1.5 text-sm text-signal"><Trash2 size={15} /> Remove</button></div>
               {sel.type === 'text' && (
                 <>
                   <textarea rows={2} value={sel.text} onChange={(e) => patch(sel.id, { text: e.target.value.slice(0, 80) })} className="field" aria-label="Text" />

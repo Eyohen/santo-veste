@@ -48,12 +48,12 @@ export function CartProvider({ children }) {
   );
 
   /** A customer-designed t-shirt. Priced by the server at checkout; `price` here is only for display. */
-  const addCustom = useCallback((design, size, qty, price) => {
+  const addCustom = useCallback((design, size, qty, price, printSize) => {
     const sku = `custom-${design.id}-${size}`;
     setLines((current) => {
       const found = current.find((l) => l.sku === sku);
       if (found) return current.map((l) => (l.sku === sku ? { ...l, qty: Math.min(found.qty + qty, 50) } : l));
-      return [...current, { sku, designId: design.id, slug: null, name: 'Custom T-shirt', price, color: 'Black', colorHex: '#171714', size, stock: 50, image: design.previewUrl, qty }];
+      return [...current, { sku, designId: design.id, slug: null, name: `Custom T-shirt (${printSize} print)`, price, color: 'Black', colorHex: '#171714', size, stock: 50, image: design.previewUrl, qty }];
     });
     setIsOpen(true);
   }, [setLines]);
