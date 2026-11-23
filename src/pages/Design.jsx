@@ -311,21 +311,6 @@ export default function Design() {
             </div>
           )}
 
-          <div>
-            <p className="mb-3 text-sm font-semibold">Ready-made graphics</p>
-            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
-              {GRAPHICS.map((g) => (
-                <li key={g.file}>
-                  <button type="button" onClick={() => addGraphic(g)} title={g.name} aria-label={`Add graphic: ${g.name}`}
-                    className="block aspect-square w-full overflow-hidden bg-asphalt p-2 ring-asphalt hover:ring-2 hover:ring-offset-2">
-                    <img src={g.src} alt="" loading="lazy" draggable={false} className="h-full w-full object-contain" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 text-xs text-muted">Tap a graphic to add it, then drag, resize or rotate it. Combine as many as you like.</p>
-          </div>
-
           {sel && (
             <div className="space-y-4 border border-asphalt/15 p-4">
               <div className="flex items-center justify-between"><p className="text-sm font-semibold">{sel.type === 'text' ? 'Text' : 'Image'}</p>
@@ -340,12 +325,28 @@ export default function Design() {
                   </div>
                 </>
               )}
+
               <label className="block text-sm">Size
                 <input type="range" min="0.05" max={sel.type === 'image' ? 1 : 0.5} step="0.01" value={sel.size} onChange={(e) => patch(sel.id, { size: Number(e.target.value) })} className="mt-1 w-full" /></label>
               <label className="block text-sm"><span className="inline-flex items-center gap-1.5"><RotateCw size={14} /> Rotate</span>
                 <input type="range" min="-180" max="180" step="1" value={sel.rot} onChange={(e) => patch(sel.id, { rot: Number(e.target.value) })} className="mt-1 w-full" /></label>
             </div>
           )}
+
+          <div>
+            <p className="mb-3 text-sm font-semibold">Ready-made graphics</p>
+            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
+              {GRAPHICS.map((g) => (
+                <li key={g.file}>
+                  <button type="button" onClick={() => addGraphic(g)} title={g.name} aria-label={`Add graphic: ${g.name}`}
+                    className="block aspect-square w-full overflow-hidden bg-asphalt p-2 ring-asphalt hover:ring-2 hover:ring-offset-2">
+                    <img src={g.src} alt="" loading="lazy" draggable={false} className="h-full w-full object-contain" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs text-muted">Tap a graphic to add it, then drag, resize or rotate it. Combine as many as you like.</p>
+          </div>
 
           <div>
             <p className="mb-3 text-sm font-semibold">Size</p>
