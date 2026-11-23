@@ -213,6 +213,29 @@ export default function Design() {
     } finally { setBusy(false); }
   }, [layers, m, model, area, printSize, size, qty, addCustom]);
 
+  // Shown under the preview on phones (where the page is one column) and under "Your design" on desktop.
+  const settingsPanel = sel && (
+      <div className="space-y-4 border border-asphalt/15 p-4">
+        <div className="flex items-center justify-between"><p className="text-sm font-semibold">{sel.type === 'text' ? 'Text' : 'Image'}</p>
+          <button type="button" onClick={() => removeLayer(sel.id)} className="inline-flex items-center gap-1.5 text-sm text-signal"><Trash2 size={15} /> Remove</button></div>
+        {sel.type === 'text' && (
+          <>
+            <textarea rows={2} value={sel.text} onChange={(e) => patch(sel.id, { text: e.target.value.slice(0, 80) })} className="field" aria-label="Text" />
+            <div className="flex flex-wrap items-center gap-3">
+              <select value={sel.family} onChange={(e) => patch(sel.id, { family: e.target.value })} className="field !w-auto" aria-label="Font">
+                {FONTS.map((f) => <option key={f.family} value={f.family}>{f.label}</option>)}</select>
+              <label className="flex items-center gap-2 text-sm">Colour <input type="color" value={sel.color} onChange={(e) => patch(sel.id, { color: e.target.value })} className="h-9 w-12" /></label>
+            </div>
+          </>
+        )}
+
+        <label className="block text-sm">Size
+          <input type="range" min="0.05" max={sel.type === 'image' ? 1 : 0.5} step="0.01" value={sel.size} onChange={(e) => patch(sel.id, { size: Number(e.target.value) })} className="mt-1 w-full" /></label>
+        <label className="block text-sm"><span className="inline-flex items-center gap-1.5"><RotateCw size={14} /> Rotate</span>
+          <input type="range" min="-180" max="180" step="1" value={sel.rot} onChange={(e) => patch(sel.id, { rot: Number(e.target.value) })} className="mt-1 w-full" /></label>
+      </div>
+  );
+
   return (
     <div className="container-x py-10">
       <h1 className="display text-2xl sm:text-3xl">Design your own t-shirt</h1>
@@ -252,6 +275,7 @@ export default function Design() {
             </div>
           </div>
           <p className="mt-2 text-center text-xs text-muted">Your design prints inside the dashed area. The dashes won&rsquo;t appear on the shirt.</p>
+          {sel && <div className="mt-4 lg:hidden">{settingsPanel}</div>}
         </div>
 
         <div className="space-y-8">
@@ -311,27 +335,7 @@ export default function Design() {
             </div>
           )}
 
-          {sel && (
-            <div className="space-y-4 border border-asphalt/15 p-4">
-              <div className="flex items-center justify-between"><p className="text-sm font-semibold">{sel.type === 'text' ? 'Text' : 'Image'}</p>
-                <button type="button" onClick={() => removeLayer(sel.id)} className="inline-flex items-center gap-1.5 text-sm text-signal"><Trash2 size={15} /> Remove</button></div>
-              {sel.type === 'text' && (
-                <>
-                  <textarea rows={2} value={sel.text} onChange={(e) => patch(sel.id, { text: e.target.value.slice(0, 80) })} className="field" aria-label="Text" />
-                  <div className="flex flex-wrap items-center gap-3">
-                    <select value={sel.family} onChange={(e) => patch(sel.id, { family: e.target.value })} className="field !w-auto" aria-label="Font">
-                      {FONTS.map((f) => <option key={f.family} value={f.family}>{f.label}</option>)}</select>
-                    <label className="flex items-center gap-2 text-sm">Colour <input type="color" value={sel.color} onChange={(e) => patch(sel.id, { color: e.target.value })} className="h-9 w-12" /></label>
-                  </div>
-                </>
-              )}
-
-              <label className="block text-sm">Size
-                <input type="range" min="0.05" max={sel.type === 'image' ? 1 : 0.5} step="0.01" value={sel.size} onChange={(e) => patch(sel.id, { size: Number(e.target.value) })} className="mt-1 w-full" /></label>
-              <label className="block text-sm"><span className="inline-flex items-center gap-1.5"><RotateCw size={14} /> Rotate</span>
-                <input type="range" min="-180" max="180" step="1" value={sel.rot} onChange={(e) => patch(sel.id, { rot: Number(e.target.value) })} className="mt-1 w-full" /></label>
-            </div>
-          )}
+          {sel && <div className="hidden lg:block">{settingsPanel}</div>}
 
           <div>
             <p className="mb-3 text-sm font-semibold">Ready-made graphics</p>
