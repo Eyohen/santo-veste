@@ -10,8 +10,8 @@ const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 const PHOTO = { w: 1080, h: 1350 };
 // The chest print area, as fractions of the 1080x1350 photo.
 const MODELS = {
-  man: { label: 'Men', src: '/BG man stone wash.jpg', top: 0.45 },
-  woman: { label: 'Women', src: '/BG wMAN.jpg', top: 0.47 },
+  man: { label: 'Men', src: '/BG man stone wash.jpg', top: 0.49 },
+  woman: { label: 'Women', src: '/BG wMAN.jpg', top: 0.51 },
 };
 // Print sizes are real paper sizes (portrait, in cm). On the photos the shirt body is about 10.5 px per cm,
 // so each size covers a true-to-scale part of the chest. The area is centred and starts `top` down the photo.
